@@ -1,0 +1,5 @@
+指定游戏地图
+一共20张
+使用方法:python capture.py --layout "layout/eval"
+
+没什么用的文件夹

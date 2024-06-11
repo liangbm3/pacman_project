@@ -21,7 +21,9 @@
 # For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
 
 # ------------------------------------ 描述 ------------------------------------ #
-#这是本地运行游戏的主文件。文件中的 GameState 类提供了许多获得当前游戏的状态信息（包括食物点、能量胶囊、智能体配置信息等）的函数。该文件还描述了游戏的运行逻辑。
+#这是本地运行游戏的主文件。
+# 文件中的 GameState 类提供了许多获得当前游戏的状态信息（包括食物点、能量胶囊、智能体配置信息等）的函数。
+#该文件还描述了游戏的运行逻辑。
 #可以通过这个类来获取游戏运行信息
 # ---------------------------------------------------------------------------- #
 
@@ -97,7 +99,7 @@ from game import reconstituteGrid
 from mazeGenerator import generateMaze
 import sys, util, types, time, random, os
 import importlib
-import keyboardAgents
+import keyboardAgents   
 import layout
 from glob import glob
 # If you change these, you won't affect the server, so you can't cheat
@@ -144,18 +146,23 @@ def noisyDistance(pos1, pos2):
 #getDistanceProb，返回给定真实距离的噪声距离的概率
 #getInitialAgentPosition，获取初始代理位置
 #getCapsules，返回剩余胶囊的位置 (x,y) 列表。
+
+# 关键是了解这些方法返回的东西具体是什么? 现在还不清楚
 # ---------------------------------------------------------------------------- #
 class GameState:
     """
     A GameState specifies the full game state, including the food, capsules,
     agent configurations and score changes.
+    GameState指定了完整的游戏状态，包括食物、药丸、agent配置和分数变化。
 
     GameStates are used by the Game object to capture the actual state of the game and
     can be used by agents to reason about the game.
+    游戏状态用于由Game对象捕获游戏的实际状态，并可以被agent用来推理游戏。
 
     Much of the information in a GameState is stored in a GameStateData object.  We
     strongly suggest that you access that data via the accessor methods below rather
     than referring to the GameStateData object directly.
+    GameState中的许多信息存储在GameStateData对象中。我们强烈建议您通过下面的访问器方法访问这些数据，而不是直接引用GameStateData对象。
     """
 
     ####################################################
@@ -171,6 +178,7 @@ class GameState:
     def generateSuccessor( self, agentIndex, action):
         """
         Returns the successor state (a GameState object) after the specified agent takes the action.
+        返回指定agent采取行动后的后继状态（GameState 对象）。
         """
         # Copy current state
         state = GameState(self)
@@ -193,6 +201,7 @@ class GameState:
         """
         Returns a location tuple if the agent with the given index is observable;
         if the agent is unobservable, returns None.
+        如果具有给定索引的agent是可观察的，则返回位置元组；如果代理不可观察，则返回 None。
         """
         agentState = self.data.agentStates[index]
         ret = agentState.getPosition()
@@ -206,6 +215,7 @@ class GameState:
     def getScore( self ):
         """
         Returns a number corresponding to the current score.
+        返回与当前分数对应的数字。
         """
         return self.data.score
 
@@ -214,6 +224,8 @@ class GameState:
         Returns a matrix of food that corresponds to the food on the red team's side.
         For the matrix m, m[x][y]=true if there is food in (x,y) that belongs to
         red (meaning red is protecting it, blue is trying to eat it).
+        返回与红队一方的食物相对应的食物矩阵。
+        对于矩阵 m，如果 (x,y) 中有属于红队的食物（即红队正在保护它，蓝队正在试图吃掉它），则 m[x][y]=true
         """
         return halfGrid(self.data.food, red = True)
 
@@ -222,10 +234,13 @@ class GameState:
         Returns a matrix of food that corresponds to the food on the blue team's side.
         For the matrix m, m[x][y]=true if there is food in (x,y) that belongs to
         blue (meaning blue is protecting it, red is trying to eat it).
+        返回与蓝队一方的食物相对应的食物矩阵。
+        对于矩阵 m，如果 (x,y) 中有属于蓝队的食物（即蓝队正在保护它，红队正在试图吃掉它），则 m[x][y]=true。
         """
         return halfGrid(self.data.food, red = False)
 
     def getRedCapsules(self):
+        """获得红色胶囊"""
         return halfList(self.data.capsules, self.data.food, red = True)
 
     def getBlueCapsules(self):
@@ -234,6 +249,7 @@ class GameState:
     def getWalls(self):
         """
         Just like getFood but for walls
+        类似于 getFood，但用于墙壁
         """
         return self.data.layout.walls
 
@@ -241,12 +257,14 @@ class GameState:
         """
         Returns true if the location (x,y) has food, regardless of
         whether it's blue team food or red team food.
+        如果位置 (x,y) 有食物，则返回 true，无论是蓝队食物还是红队食物。
         """
         return self.data.food[x][y]
 
     def hasWall(self, x, y):
         """
         Returns true if (x,y) has a wall, false otherwise.
+        如果 (x,y) 有墙则返回 true，否则返回 false。
         """
         return self.data.layout.walls[x][y]
 
@@ -256,24 +274,28 @@ class GameState:
     def getRedTeamIndices(self):
         """
         Returns a list of agent index numbers for the agents on the red team.
+        返回红队agent的索引号列表。
         """
         return self.redTeam[:]
 
     def getBlueTeamIndices(self):
         """
         Returns a list of the agent index numbers for the agents on the blue team.
+        返回蓝队agent的索引号列表。
         """
         return self.blueTeam[:]
 
     def isOnRedTeam(self, agentIndex):
         """
         Returns true if the agent with the given agentIndex is on the red team.
+        如果具有指定 agentIndex 的agent在红队，则返回 true
         """
         return self.teams[agentIndex]
 
     def getAgentDistances(self):
         """
         Returns a noisy distance to each agent.
+        返回每个agent的噪声距离。   ???什么是噪声距离
         """
         if 'agentDistances' in dir(self) :
             return self.agentDistances
@@ -282,6 +304,7 @@ class GameState:
 
     def getDistanceProb(self, trueDistance, noisyDistance):
         "Returns the probability of a noisy distance given the true distance"
+        #返回给定真实距离的噪声距离的概率
         if noisyDistance - trueDistance in SONAR_NOISE_VALUES:
             return 1.0/SONAR_NOISE_RANGE
         else:
@@ -289,22 +312,26 @@ class GameState:
 
     def getInitialAgentPosition(self, agentIndex):
         "Returns the initial position of an agent."
+        #返回代理的初始位置。
         return self.data.layout.agentPositions[agentIndex][1]
 
     def getCapsules(self):
         """
         Returns a list of positions (x,y) of the remaining capsules.
+        返回剩余胶囊的位置 (x,y) 列表。
         """
         return self.data.capsules
 
     #############################################
     #             Helper methods:               #
     # You shouldn't need to call these directly #
+    #       你不需要直接调用这些方法              #
     #############################################
 
     def __init__( self, prevState = None ):
         """
         Generates a new state by copying information from its predecessor.
+        通过复制前身的信息来生成新状态
         """
         if prevState != None: # Initial state
             self.data = GameStateData(prevState.data)
@@ -332,13 +359,13 @@ class GameState:
     def makeObservation(self, index):
         state = self.deepCopy()
 
-        # Adds the sonar signal
+        # Adds the sonar signal 添加声纳信号
         pos = state.getAgentPosition(index)
         n = state.getNumAgents()
         distances = [noisyDistance(pos, state.getAgentPosition(i)) for i in range(n)]
         state.agentDistances = distances
 
-        # Remove states of distant opponents
+        # Remove states of distant opponents    删除远方对手的状态
         if index in self.blueTeam:
             team = self.blueTeam
             otherTeam = self.redTeam
@@ -357,14 +384,14 @@ class GameState:
 
     def __eq__( self, other ):
         """
-        Allows two states to be compared.
+        Allows two states to be compared.允许比较两个状态
         """
         if other == None: return False
         return self.data == other.data
 
     def __hash__( self ):
         """
-        Allows states to be keys of dictionaries.
+        Allows states to be keys of dictionaries.允许状态成为字典的键。
         """
         return int(hash( self.data ))
 
@@ -375,6 +402,7 @@ class GameState:
     def initialize( self, layout, numAgents):
         """
         Creates an initial game state from a layout array (see layout.py).
+        从布局数组创建初始游戏状态（参见layout.py）。
         """
         self.data.initialize(layout, numAgents)
         positions = [a.configuration for a in self.data.agentStates]
@@ -393,7 +421,10 @@ class GameState:
         else:
             return configOrPos.pos[0] < width / 2
 
-def halfGrid(grid, red):
+
+### 非GameSatate类的方法
+def halfGrid(grid, red):    
+    """如果red参数为True，则返回原始地图网格的左半部分；如果为False，则返回右半部分。"""
     halfway = grid.width // 2
     halfgrid = Grid(grid.width, grid.height, False)
     if red:    xrange = list(range(halfway))
@@ -406,6 +437,10 @@ def halfGrid(grid, red):
     return halfgrid
 
 def halfList(l, grid, red):
+    """
+    根据传入的布尔值red、网格grid的宽度的一半，以及列表l中的元组，
+    创建一个新的列表newList，其中包含(x,y)的元组
+    """
     halfway = grid.width / 2
     newList = []
     for x,y in l:
@@ -417,6 +452,7 @@ def halfList(l, grid, red):
 #                     THE HIDDEN SECRETS OF PACMAN                         #
 #                           吃豆人隐藏的秘密                                #
 # You shouldn't need to look through the code in this section of the file. #
+#                          你不需要查看本文件中这一部分代码。                  #
 ############################################################################
 
 COLLISION_TOLERANCE = 0.7 # How close ghosts must be to Pacman to kill
@@ -512,6 +548,7 @@ class CaptureRules:
 class AgentRules:
     """
     These functions govern how each agent interacts with her environment.
+    这些函数控制每个agent如何与其环境交互
     """
 
     def getLegalActions( state, agentIndex ):
@@ -796,12 +833,13 @@ class AgentRules:
 
 #############################
 # FRAMEWORK TO START A GAME #
+#     开始游戏的框架         #
 #############################
 
 def default(str):
     return str + ' [Default: %default]'
 
-def parseAgentArgs(str):
+def parseAgentArgs(str):    # 解析agent参数,并返回一个包含参数键值对的字典。
     if str == None or str == '': return {}
     pieces = str.split(',')
     opts = {}
@@ -816,16 +854,18 @@ def parseAgentArgs(str):
 def readCommand( argv ):
     """
     Processes the command used to run pacman from the command line.
+    处理从命令行运行 pacman 的命令。
     """
     from optparse import OptionParser
     usageStr = """
     USAGE:      python pacman.py <options>
     EXAMPLES:   (1) python capture.py
-                                    - starts a game with two baseline agents
+                                    - starts a game with two baseline agents    使用两个baseline代理启动游戏 
                             (2) python capture.py --keys0
                                     - starts a two-player interactive game where the arrow keys control agent 0, and all other agents are baseline agents
+                                    开始一个双人互动游戏，其中方向键控制agent 0，所有其他代理都是baseline代理
                             (3) python capture.py -r baselineTeam -b myTeam
-                                    - starts a fully automated game where the red team is a baseline team and blue team is myTeam
+                                    - starts a fully automated game where the red team is a baseline team and blue team is myTeam   开始一场全自动游戏，其中红队是baseline队，蓝队是myTeam
     """
     parser = OptionParser(usageStr)
 
@@ -966,9 +1006,10 @@ def readCommand( argv ):
 
 
 
-import traceback
+import traceback   # 用于提供详细的异常信息
 def loadAgents(isRed, factory, textgraphics, cmdLineArgs):
     "Calls agent factories and returns lists of agents"
+    # 调用agent factory并返回agent列表
     try:
         if not factory.endswith(".py"):
             factory += ".py"
@@ -980,7 +1021,7 @@ def loadAgents(isRed, factory, textgraphics, cmdLineArgs):
         return [None for i in range(2)]
 
     args = dict()
-    args.update(cmdLineArgs)  # Add command line args with priority
+    args.update(cmdLineArgs)  # Add command line args with priority 添加具有优先级的命令行参数
 
     print("Loading Team:", factory)
     print("Arguments:", args)
@@ -1021,21 +1062,21 @@ def replayGame( layout, agents, actions, display, length, redTeamName, blueTeamN
 
 def runGames( layouts, agents, display, length, numGames, record, numTraining, redTeamName, blueTeamName, muteAgents=False, catchExceptions=False ):
 
-    rules = CaptureRules()
-    games = []
+    rules = CaptureRules()  # CaptureRules实例
+    games = []          # 空列表games来存储游戏的结果。
 
     if numTraining > 0:
-        print('Playing %d training games' % numTraining)
+        print('Playing %d training games' % numTraining)    # 判断是否进行训练游戏，并打印相关信息。
 
     for i in range( numGames ):
         beQuiet = i < numTraining
         layout = layouts[i]
-        if beQuiet:
+        if beQuiet: # 如果游戏是训练游戏（即beQuiet=True）,这里指的是使用指令-q或-Q
                 # Suppress output and graphics
                 import textDisplay
                 gameDisplay = textDisplay.NullGraphics()
                 rules.quiet = True
-        else:
+        else: # 如果游戏不是训练游戏（即beQuiet=False）
                 gameDisplay = display
                 rules.quiet = False
         g = rules.newGame( layout, agents, gameDisplay, length, muteAgents, catchExceptions )
@@ -1054,7 +1095,7 @@ def runGames( layouts, agents, display, length, numGames, record, numTraining, r
             with open('replay-%d'%i,'wb') as f:
                 f.write(g.record)
 
-    if numGames > 1:
+    if numGames > 1:    # 如果有多个游戏，则会打印游戏的平均分数、得分、红队和蓝队的胜率，以及记录（胜方或平局）统计信息。
         scores = [game.state.data.score for game in games]
         redWinRate = [s > 0 for s in scores].count(True)/ float(len(scores))
         blueWinRate = [s < 0 for s in scores].count(True)/ float(len(scores))
@@ -1080,7 +1121,7 @@ if __name__ == '__main__':
 
     > python capture.py --help
     """
-    options = readCommand(sys.argv[1:]) # Get game components based on input
+    options = readCommand(sys.argv[1:]) # Get game components based on input    根据输入获取游戏组件
     games = runGames(**options)
 
     # save_score(games[0])

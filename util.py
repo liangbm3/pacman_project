@@ -532,6 +532,7 @@ def chooseFromDistribution( distribution ):
 def nearestPoint( pos ):
     """
     Finds the nearest grid point to a position (discretizes).
+    找到距离某个位置最近的网格点（离散化）。
     """
     ( current_row, current_col ) = pos
 
