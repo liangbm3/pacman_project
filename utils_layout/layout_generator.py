@@ -1,3 +1,12 @@
+# ---------------------------------------------------------------------------- #
+# 感觉没什么用
+# 把random.seed(MAX_DIFFERENT_MAZES)  注释掉
+# 把random.seed(random.randint(1,MAX_DIFFERENT_MAZES))取消注释
+# 每次运行layout_generator.py都会生成20个新的不同的随机地图
+# ---------------------------------------------------------------------------- #
+
+
+
 import random, sys, os
 from pathlib import Path
 base_dir = str(Path(__file__).resolve().parent.parent)
