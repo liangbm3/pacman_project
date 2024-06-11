@@ -5,8 +5,9 @@ sys.path.append(base_dir)
 from mazeGenerator import Maze, make, add_pacman_stuff
 
 MAX_DIFFERENT_MAZES = 202325995
-# random.seed(random.randint(1,MAX_DIFFERENT_MAZES))
-random.seed(MAX_DIFFERENT_MAZES)
+# random.seed(random.randint(1,MAX_DIFFERENT_MAZES))    # 随机数种子随机生成，每次生成的地图都不同
+random.seed(MAX_DIFFERENT_MAZES)    #随机数种子MAX_DIFFERENT_MAZES来初始化随机数生成器，
+                    # 由于每次使用相同的种子生成的随机数序列是相同的，因此在这里每次运行生成的地图都是相同的。
 
 row, col, factor = (16, 16, 1)
 
