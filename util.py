@@ -118,6 +118,7 @@ class FixedRandom:
 
 """
  Data structures useful for implementing SearchAgents
+ 用于实现搜索agent的数据结构
 """
 
 class Stack:
@@ -167,6 +168,10 @@ class PriorityQueue:
       Note that this PriorityQueue does not allow you to change the priority
       of an item.  However, you may insert the same item multiple times with
       different priorities.
+       实现优先队列数据结构。 每个插入的项都有与之关联的优先级，客户端通常希望快速检索队列中优先级最低的项。 
+       此数据结构允许 O(1) 访问最低优先级项。
+    
+      请注意，此优先队列不允许您更改项的优先级。 但是，您可以多次插入相同的项，但具有不同的优先级。
     """
     def  __init__(self):
         self.heap = []
@@ -175,7 +180,7 @@ class PriorityQueue:
     def push(self, item, priority):
         # FIXME: restored old behaviour to check against old results better
         # FIXED: restored to stable behaviour
-        entry = (priority, self.count, item)
+        entry = (priority, self.count, item)    #保证在具有相同优先级的项中，最先插入的项能够在队列中靠前地出现。
         # entry = (priority, item)
         heapq.heappush(self.heap, entry)
         self.count += 1
@@ -194,7 +199,11 @@ class PriorityQueueWithFunction(PriorityQueue):
     Queue and the Stack classes. This is designed for drop-in replacement for
     those two classes. The caller has to provide a priority function, which
     extracts each item's priority.
+    
     """
+# 实现具有与 Queue 和 Stack 类相同的 push/pop 签名的优先级队列。这是为了无缝替换这两个类而设计的。
+# 调用者必须提供一个优先级函数，该函数提取每个项目的优先级。
+
     def  __init__(self, priorityFunction):
         "priorityFunction (item) -> priority"
         self.priorityFunction = priorityFunction      # store the priority function
@@ -202,23 +211,28 @@ class PriorityQueueWithFunction(PriorityQueue):
 
     def push(self, item):
         "Adds an item to the queue with priority from the priority function"
+        "使用优先级函数将项目添加到队列中"
         PriorityQueue.push(self, item, self.priorityFunction(item))
 
 
 def manhattanDistance( xy1, xy2 ):
     "Returns the Manhattan distance between points xy1 and xy2"
+    #  "返回点xy1和xy2之间的曼哈顿距离"
     return abs( xy1[0] - xy2[0] ) + abs( xy1[1] - xy2[1] )
 
 """
   Data structures and functions useful for various course projects
+  用于各种课程项目的数据结构和函数
 
   The search project should not need anything below this line.
+  搜索项目不应需要下面的任何内容。
 """
 
 class Counter(dict):
     """
     A counter keeps track of counts for a set of keys.
-
+    Counter类是标准Python字典类型的扩展。它专门用于具有数字值（整数或浮点数），
+    并包括一些额外的函数来简化计数数据的任务。特别是，默认情况下，所有键的值都为0。
     The counter class is an extension of the standard python
     dictionary type.  It is specialized to have number values
     (integers or floats), and includes a handful of additional
@@ -275,7 +289,7 @@ class Counter(dict):
 
     def argMax(self):
         """
-        Returns the key with the highest value.
+        Returns the key with the highest value.返回具有最高值的键。
         """
         if len(list(self.keys())) == 0: return None
         all = list(self.items())
@@ -287,7 +301,7 @@ class Counter(dict):
         """
         Returns a list of keys sorted by their values.  Keys
         with the highest values will appear first.
-
+        返回按值排序的键列表。键的优先级最高的项将首先出现。
         >>> a = Counter()
         >>> a['first'] = -2
         >>> a['second'] = 4
@@ -302,7 +316,7 @@ class Counter(dict):
 
     def totalCount(self):
         """
-        Returns the sum of counts for all keys.
+        Returns the sum of counts for all keys.返回所有键的计数总和。
         """
         return sum(self.values())
 
@@ -312,6 +326,7 @@ class Counter(dict):
         keys sums to 1.  The ratio of counts for all keys
         will remain the same. Note that normalizing an empty
         Counter will result in an error.
+        编辑计数器，使得所有键的总计数之和为1。所有键的计数比例将保持不变。注意，对空计数器进行归一化将导致错误。
         """
         total = float(self.totalCount())
         if total == 0: return
@@ -320,7 +335,7 @@ class Counter(dict):
 
     def divideAll(self, divisor):
         """
-        Divides all counts by divisor
+        Divides all counts by divisor 
         """
         divisor = float(divisor)
         for key in self:
@@ -517,6 +532,7 @@ def chooseFromDistribution( distribution ):
 def nearestPoint( pos ):
     """
     Finds the nearest grid point to a position (discretizes).
+    找到距离某个位置最近的网格点（离散化）。
     """
     ( current_row, current_col ) = pos
 
