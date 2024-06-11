@@ -18,6 +18,7 @@
 
 """
     Interfaces for capture agents and agent factories
+    捕获agent接口和agent factories接口"     ??? 什么是factory
 """
 
 from game import Agent
@@ -40,7 +41,8 @@ class AgentFactory:
 
     def getAgent(self, index):
         "Returns the agent for the provided index.（返回是哪个agent）"
-        util.raiseNotDefined()
+        util.raiseNotDefined()  #该函数的主要目的是用于标记尚未实现的方法，以便在代码中进行标记和调试。
+                                #当程序尝试调用尚未实现的方法时，会打印出相应的错误消息，并终止程序的执行
 
 # ---------------------------------------------------------------------------- #
 #RandomAgent类，创建一个随机Agent
@@ -60,14 +62,15 @@ class CaptureAgent(Agent):
     """
     A base class for capture agents.  The convenience methods herein handle
     some of the complications of a two-team game.
-    捕获agent的基类。此处的便捷方法可处理双队游戏中的一些复杂情况。
+    CaptureAgent的基类。此处的便捷方法可处理双队游戏中的一些复杂情况。
     
     Recommended Usage:  Subclass CaptureAgent and override chooseAction.
     建议用法：子类化 CaptureAgent 并覆盖 chooseAction。
     """
 
     #############################
-    # Methods to store key info #
+    # Methods to store key info
+    # 存储关键信息的方法     #
     #############################
 
     def __init__( self, index, timeForComputing = .1 ):
@@ -84,7 +87,7 @@ class CaptureAgent(Agent):
                 (part of the provided distance calculator)
                 （计算迷宫距离时每回合给出的时间量，提供的距离计算器的一部分）
         """
-        # Agent index for querying state
+        # Agent index for querying state    
         self.index = index
 
         # Whether or not you're on the red team
@@ -135,12 +138,13 @@ class CaptureAgent(Agent):
         """
         Fills the self.agentsOnTeam field with a list of the
         indices of the agents on your team.
-        使用提供的团队索引列表来填充
+        使用提供的团队中agent的索引列表来填充 self.agentsOnTeam 
         """
         self.agentsOnTeam = agentsOnTeam
 
     def observationFunction(self, gameState):
         " Changing this won't affect pacclient.py, but will affect capture.py "
+        # 更改此项不会影响 pacclient.py，但会影响 capture.py
         return gameState.makeObservation(self.index)
 
     def debugDraw(self, cells, color, clear=False):
@@ -170,7 +174,12 @@ class CaptureAgent(Agent):
         (so you have a record of the game states of the game) and will call your
         choose action method if you're in a state (rather than halfway through your last
         move - this occurs because Pacman agents move half as quickly as ghost agents).
-
+        
+        在网格位置调用 chooseAction，但在半个位置继续。
+        如果您将 CaptureAgent 子类化，则无需重写此方法。
+        它负责将当前游戏状态附加到您的观察历史记录中（这样您就有了游戏状态的记录），
+        并且如果您处于某个状态（而不是上次移动的一半 - 发生这种情况是因为 Pacman agent的移动速度是幽灵agent的一半），
+        它将调用您的选择操作方法。
         """
         self.observationHistory.append(gameState)
 
@@ -186,6 +195,7 @@ class CaptureAgent(Agent):
         """
         Override this method to make a good agent. It should return a legal action within
         the time limit (otherwise a random legal action will be chosen for you).
+        重写此方法可制作一个好的agent。它应在时限内返回合法操作（否则将为您随机选择合法操作）。
         """
         util.raiseNotDefined()
 
@@ -197,6 +207,7 @@ class CaptureAgent(Agent):
         """
         Returns the food you're meant to eat. This is in the form of a matrix
         where m[x][y]=true if there is food you can eat (based on your team) in that square.
+        返回您要吃的食物。它以矩阵的形式显示，其中如果该方格中有您可以吃的食物（根据您的团队），则 m[x][y]=true。
         """
         if self.red:
             return gameState.getBlueFood()
@@ -208,6 +219,8 @@ class CaptureAgent(Agent):
         Returns the food you're meant to protect (i.e., that your opponent is
         supposed to eat). This is in the form of a matrix where m[x][y]=true if
         there is food at (x,y) that your opponent can eat.
+        返回您要保护的食物（即您的对手应该吃的食物）。它以矩阵的形式出现，
+        其中如果 (x,y) 处有您的对手可以吃的食物，则 m[x][y]=true。
         """
         if self.red:
             return gameState.getRedFood()
@@ -230,6 +243,7 @@ class CaptureAgent(Agent):
         """
         Returns agent indices of your opponents. This is the list of the numbers
         of the agents (e.g., red might be "1,3,5")
+        返回您对手的索引列表。这是一个数字列表，例如红队可能是 "1,3,5"
         """
         if self.red:
             return gameState.getBlueTeamIndices()
@@ -240,6 +254,7 @@ class CaptureAgent(Agent):
         """
         Returns agent indices of your team. This is the list of the numbers
         of the agents (e.g., red might be the list of 1,3,5)
+        返回您的队伍的索引列表。这是一个数字列表，例如红队可能是 1,3,5 列表
         """
         if self.red:
             return gameState.getRedTeamIndices()
@@ -251,6 +266,7 @@ class CaptureAgent(Agent):
         Returns how much you are beating the other team by in the form of a number
         that is the difference between your score and the opponents score.  This number
         is negative if you're losing.
+        返回您赢得其他队伍的分数的形式。这是一个数字，它是您得分与对手得分之间的差值。
         """
         if self.red:
             return gameState.getScore()
@@ -261,9 +277,11 @@ class CaptureAgent(Agent):
         """
         Returns the distance between two points; These are calculated using the provided
         distancer object.
-
+        返回两个点之间的距离。这些是使用提供的 distancer 对象计算的。
         If distancer.getMazeDistances() has been called, then maze distances are available.
         Otherwise, this just returns Manhattan distance.
+        如果 distancer.getMazeDistances() 已被调用，则可获得迷宫距离。
+        否则，它只返回曼哈顿距离。
         """
         d = self.distancer.getDistance(pos1, pos2)
         return d
@@ -273,6 +291,8 @@ class CaptureAgent(Agent):
         Returns the GameState object corresponding to the last state this agent saw
         (the observed state of the game last time this agent moved - this may not include
         all of your opponent's agent locations exactly).
+        返回上次看到该 agent 状态的 GameState 对象
+        (上一次该 agent 移动时的游戏状态 - 这可能不包括所有您的对手 agent 位置的精确位置）。
         """
         if len(self.observationHistory) == 1: return None
         else: return self.observationHistory[-2]
@@ -282,6 +302,8 @@ class CaptureAgent(Agent):
         Returns the GameState object corresponding this agent's current observation
         (the observed state of the game - this may not include
         all of your opponent's agent locations exactly).
+        返回当前 agent 观察的 GameState 对象
+        (游戏的观察状态 - 这可能不包括所有您的对手 agent 位置的精确位置)。
         """
         return self.observationHistory[-1]
 
@@ -289,22 +311,25 @@ class CaptureAgent(Agent):
         """
         Overlays a distribution over positions onto the pacman board that represents
         an agent's beliefs about the positions of each agent.
-
+        叠加分布在 pacman 板上的位置，表示每个 agent 的位置分布的 agent 信念。
         The arg distributions is a tuple or list of util.Counter objects, where the i'th
         Counter has keys that are board positions (x,y) and values that encode the probability
         that agent i is at (x,y).
-
+        该参数 distributions 是一个元组或列表，其中第 i 个 Counter 对象有键值对，
+        其中键是 board 位置 (x,y)，值是编码 agent i 位于 (x,y) 位置的概率。
         If some elements are None, then they will be ignored.  If a Counter is passed to this
         function, it will be displayed. This is helpful for figuring out if your agent is doing
         inference correctly, and does not affect gameplay.
+        如果某些元素为 None，则将忽略它们。如果传递了一个 Counter 对象到该函数中，则会显示。
+        这对于检查 agent 是否正确推理非常有用，不会影响游戏。
         """
         dists = []
-        for dist in distributions:
+        for dist in distributions:  #遍历输入的分布数据
             if dist != None:
                 if not isinstance(dist, util.Counter): raise Exception("Wrong type of distribution")
                 dists.append(dist)
             else:
-                dists.append(util.Counter())
+                dists.append(util.Counter())    
         if self.display != None and 'updateDistributions' in dir(self.display):
             self.display.updateDistributions(dists)
         else:
@@ -315,6 +340,7 @@ class TimeoutAgent( Agent ):
     """
     A random agent that takes too much time. Taking
     too much time results in penalties and random moves.
+    一个随机agent，耗时过多。耗时过多会导致处罚和随机移动。
     """
     def __init__( self, index ):
         self.index = index
