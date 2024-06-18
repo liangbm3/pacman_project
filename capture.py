@@ -346,11 +346,11 @@ class GameState:
             self.agentDistances = []
 
     def deepCopy( self ):
-        state = GameState( self )
-        state.data = self.data.deepCopy()
-        state.data.timeleft = self.data.timeleft
+        state = GameState( self )   
+        state.data = self.data.deepCopy()   
+        state.data.timeleft = self.data.timeleft    
 
-        state.blueTeam = self.blueTeam[:]
+        state.blueTeam = self.blueTeam[:]   
         state.redTeam = self.redTeam[:]
         state.teams = self.teams[:]
         state.agentDistances = self.agentDistances[:]
@@ -871,6 +871,7 @@ def readCommand( argv ):
 
     parser.add_option('-r', '--red', help=default('Red team'),
                                         default='baselineTeam')
+                                        #default='algo/zhn_agent')
     parser.add_option('-b', '--blue', help=default('Blue team'),
                                         default='baselineTeam')
     parser.add_option('--red-name', help=default('Red team name'),

@@ -56,8 +56,8 @@ class Maze:
 
     def to_map(self):
         """
-        add a flipped symmetric copy on the right
-        add a border
+        add a flipped symmetric copy on the right在右侧添加翻转的对称副本
+        add a border添加边框
         """
 
         ## add a flipped symmetric copy
@@ -193,8 +193,8 @@ def copy_grid(grid):
 
 def add_pacman_stuff(maze, max_food=60, max_capsules=4, toskip=0):
     """
-    add pacmen starting position
-    add food at dead ends plus some extra
+    add pacmen starting position 添加吃豆人的起始位置
+    add food at dead ends plus some extra 在死胡同处添加食物以及一些额外的
     """
 
     ## parameters

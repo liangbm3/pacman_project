@@ -19,6 +19,7 @@ import mazeGenerator
 """
 This is a helper file which generates the random seeds for the map
 layouts for the nightly tournament.
+这是一个辅助文件，它可以为nightly锦标赛的地图布局生成随机种子
 """
 
 if __name__=="__main__":

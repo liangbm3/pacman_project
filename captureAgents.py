@@ -125,6 +125,7 @@ class CaptureAgent(Agent):
         self.distancer = distanceCalculator.Distancer(gameState.data.layout)
 
         # comment this out to forgo maze distance computation and use manhattan distances
+        #注释掉这个放弃迷宫距离计算并使用曼哈顿距离
         self.distancer.getMazeDistances()
 
         import __main__
