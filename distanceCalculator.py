@@ -112,13 +112,20 @@ class DistanceCalculator:
 
 def computeDistances(layout):
 		"Runs UCS to all other positions from each position"
+		"""
+		利用广度优先搜索（BFS）算法计算其到其他位置的最短距离。
+		具体而言，通过维护一个优先级队列（PriorityQueue）和一个距离字典（dist），
+		在每次迭代中从队列中取出一个节点，
+		并将其邻近的非墙壁位置加入队列并更新最短距离。
+		最终将计算得到的最短距离存储在distances字典中，并返回该字典。
+		"""
 		distances = {}
 		allNodes = layout.walls.asList(False)
 		for source in allNodes:
-				dist = {}
-				closed = {}
-				for node in allNodes:
-						dist[node] = sys.maxsize
+				dist = {}	# 记录节点到起始节点的距离
+				closed = {}	# 记录已经访问过的节点
+				for node in allNodes:	
+						dist[node] = sys.maxsize	# 初始距离设为正无穷
 				import util
 				queue = util.PriorityQueue()
 				queue.push(source, 0)
@@ -150,7 +157,59 @@ def computeDistances(layout):
 				for target in allNodes:
 						distances[(target, source)] = dist[target]
 		return distances
+"""
+import sys
+import heapq
 
+def dijkstra(graph, start):
+    # 初始化距离字典，将起始节点距离设为0，其余节点距离设为正无穷
+    distances = {node: float('inf') for node in graph}
+    distances[start] = 0
+    # 使用堆来保存待处理节点，(距离, 节点) 的形式
+    queue = [(0, start)
+
+    while queue:
+        # 从堆中取出距离最短的节点
+        current_distance, current_node = heapq.heappop(queue)
+        # 如果当前节点的距离大于已经记录的距离，则忽略
+        if current_distance > distances[current_node]:
+            continue
+        # 遍历当前节点的相邻节点
+        for neighbor, weight in graph[current_node].items():
+            # 计算当前节点经过相邻节点到达目标节点的距禂
+            distance = current_distance + weight
+            # 如果经过相邻节点到达目标节点的距愈小于已经记录的距愈，则更新距愈并加入堆中
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                heapq.heappush(queue, (distance, neighbor))
+    
+    return distances
+
+def computeDistancesWithDijkstra(layout):
+    # 构建图，表示迷宫中各个节点之间的连接关系
+    graph = {}
+    allNodes = layout.walls.asList(False)
+    for node in allNodes:
+        graph[node] = {}
+        x, y = node
+        # 检查相邻节点是否是墙，并添加到图中
+        if not layout.isWall((x, y + 1)):
+            graph[node][(x, y + 1)] = 1
+        if not layout.isWall((x, y - 1)):
+            graph[node][(x, y - 1)] = 1
+        if not layout.isWall((x + 1, y)):
+            graph[node][(x + 1, y)] = 1
+        if not layout.isWall((x - 1, y)):
+            graph[node][(x - 1, y)] = 1
+
+    distances = {}
+    for node in allNodes:
+        # 使用 Dijkstra 算法计算每个节点到其他节点之间的最短距离
+        distances[node] = dijkstra(graph, node)
+
+    return distances
+
+"""
 
 def getDistanceOnGrid(distances, pos1, pos2):
 		key = (pos1, pos2)

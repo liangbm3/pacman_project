@@ -56,22 +56,24 @@ def createTeam(firstIndex, secondIndex, isRed,
 class ReflexCaptureAgent(CaptureAgent):
     """
     A base class for reflex agents that chooses score-maximizing actions
+    reflex agent 的基类,选择的动作是使得得分最大化
     """
  
     def registerInitialState(self, gameState):
         self.start = gameState.getAgentPosition(self.index)
         CaptureAgent.registerInitialState(self, gameState)
-
+    
     def chooseAction(self, gameState):
         """
         Picks among the actions with the highest Q(s,a).
+        从 Q(s,a) 最高的动作中进行选择。
         """
         actions = gameState.getLegalActions(self.index)
 
-        # You can profile your evaluation time by uncommenting these lines
-        # start = time.time()
+        # You can profile your evaluation time by uncommenting these lines      #您可以通过取消注释这些行来分析您的评估时间
+        start = time.time()
         values = [self.evaluate(gameState, a) for a in actions]
-        # print 'eval time for agent %d: %.4f' % (self.index, time.time() - start)
+        print ('eval time for agent %d: %.4f' % (self.index, time.time() - start))
 
         maxValue = max(values)
         bestActions = [a for a, v in zip(actions, values) if v == maxValue]
@@ -105,7 +107,7 @@ class ReflexCaptureAgent(CaptureAgent):
 
     def evaluate(self, gameState, action):
         """
-        Computes a linear combination of features and feature weights
+        Computes a linear combination of features and feature weights计算特征和特征权重的线性组合
         """
         features = self.getFeatures(gameState, action)
         weights = self.getWeights(gameState, action)
@@ -123,7 +125,7 @@ class ReflexCaptureAgent(CaptureAgent):
     def getWeights(self, gameState, action):
         """
         Normally, weights do not depend on the gamestate.  They can be either
-        a counter or a dictionary.
+        a counter or a dictionary.通常，权重不依赖于游戏状态。它们可以是计数器或字典。
         """
         return {'successorScore': 1.0}
 
