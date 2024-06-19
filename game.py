@@ -41,7 +41,8 @@ class Agent:
     """
     An agent must define a getAction method, but may also define the
     following methods which will be called if they exist:
-
+    agent必须定义一个 getAction 方法，但也可以定义以下方法（如果存在则会调用）：
+    
     def registerInitialState(self, state): # inspects the starting state
     """
     def __init__(self, index=0):
@@ -81,7 +82,8 @@ class Directions:
                STOP: STOP}
 
 # ---------------------------------------------------------------------------- #
-#配置类，配置保存角色的 (x,y) 坐标及其行进方向。位置的惯例（如图形）是 (0,0) 为左下角，x 水平增加，y 垂直增加。因此，北是 y 增加的方向，即 (0,1)。
+#配置类，配置保存角色的 (x,y) 坐标及其行进方向。位置的惯例（如图形）是 (0,0) 为左下角，x 水平增加，y 垂直增加。
+# 因此，北是 y 增加的方向，即 (0,1)。
 #里面有两个属性：pos（位置），direction（方向）
 #里面有一个方法，generateSuccessor，将当前配置转换为动作向量
 # ---------------------------------------------------------------------------- #
@@ -89,9 +91,10 @@ class Configuration:
     """
     A Configuration holds the (x,y) coordinate of a character, along with its
     traveling direction.
-
+    配置保存角色的 (x,y) 坐标以及其行进方向。
     The convention for positions, like a graph, is that (0,0) is the lower left corner, x increases
     horizontally and y increases vertically.  Therefore, north is the direction of increasing y, or (0,1).
+    位置的惯例，就像图形一样，是 (0,0) 为左下角，x 水平增加，y 垂直增加。因此，北是 y 增加的方向，即 (0,1)。
     """
 
     def __init__(self, pos, direction):
@@ -404,6 +407,7 @@ class GameStateData:
     def __init__( self, prevState = None ):
         """
         Generates a new data packet by copying information from its predecessor.
+        通过复制前身数据包的信息来生成新的数据包。
         """
         if prevState != None:
             self.food = prevState.food.shallowCopy()
