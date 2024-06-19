@@ -387,6 +387,7 @@ class GhostRules:
         """
         Ghosts cannot stop, and cannot turn around unless they
         reach a dead end, but can turn 90 degrees at intersections.
+        鬼魂是无法停下来的，不到死路一条也无法掉头，不过在路口可以转90度
         """
         conf = state.getGhostState( ghostIndex ).configuration
         possibleActions = Actions.getPossibleActions( conf, state.data.layout.walls )
