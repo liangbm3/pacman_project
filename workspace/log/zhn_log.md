@@ -3,3 +3,7 @@
 3. python capture.py -r algo/zhn_agent -b baselineTeam 用于我写的agent与baselineTeam比赛  24/06/11  11:00AM
 
 evaluate这里可能要下功夫
+
+4.在ZHN_agent.py文件里写了个基类ApproximateAdversarialAgent,
+5.动作选取通过alpha-beta 剪枝,看不见的敌人用贝叶斯推理近似
+6.写攻击防御的agent只需要改evaluatestate函数给返回各个动作的值
