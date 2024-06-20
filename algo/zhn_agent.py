@@ -7,9 +7,10 @@ from game import Directions
 import game
 from game import Agent
 from capture import SIGHT_RANGE
+from util import nearestPoint
 # 创建团队函数，返回两个代理，分别是进攻型代理和防守型代理
 def createTeam(firstIndex, secondIndex, isRed,
-               first = 'CautiousAttackAgent', second = 'DefensiveAgent'):
+               first = 'OpportunisticAttackAgent', second = 'DefensiveAgent'):
     return [eval(first)(firstIndex), eval(second)(secondIndex)]
 
 
@@ -20,6 +21,7 @@ class ApproximateAdversarialAgent(CaptureAgent):
 
 
     SEARCH_DEPTH = 2  # 搜索深度
+    capsuleTimer = 0.0
 
     def registerInitialState(self, gameState):
             CaptureAgent.registerInitialState(self, gameState)
@@ -27,6 +29,8 @@ class ApproximateAdversarialAgent(CaptureAgent):
             # 获取棋盘上所有非墙壁位置
             self.legalPositions = gameState.data.layout.walls.asList(False)
 
+            # 存储可以变成pacman的位置
+            self.changeTopacman = []
             # 初始化对手的位置信念分布
             self.positionBeliefs = {}
             for opponent in self.getOpponents(gameState):   # 遍历所有对手的索引
@@ -68,6 +72,11 @@ class ApproximateAdversarialAgent(CaptureAgent):
             if value > bestVal:
                     bestVal, bestAction = value, action
 
+        if(self.capsuleTimer > 0):
+            self.capsuleTimer -= 1
+
+        if(self.getSuccessor(gameState, action).getAgentState(self.index).getPosition() in self.getFood(gameState).asList()):
+            self.dotsEaten += 1
         return action
 
     def fixPosition(self, agent, position):
@@ -182,7 +191,9 @@ class ApproximateAdversarialAgent(CaptureAgent):
         """
         util.raiseNotDefined()
 
-    # 通用的辅助函数
+    #####################
+    ### 通用的辅助函数 ###
+    #####################
     def getAgentPosition(self, agent, gameState):
         """
         返回指定agent的位置
@@ -213,7 +224,35 @@ class ApproximateAdversarialAgent(CaptureAgent):
             ID_and_distances.append((o, distance))
         return ID_and_distances
 
+    def recordChangeToPacman(self, gameState):
+        """
+        当上一个状态是在己方地区，而下一个状态是敌方地盘，记录上一个状态所在位置到列表self.changetopacman。
+        """
+        # 获取上一个状态
+        prevObservation = self.getPreviousObservation()
+        if prevObservation:
+            # 获取上一个状态时代理的位置
+            prevPos = prevObservation.getAgentState(self.index).getPosition()
+            # 检查代理在上一个状态和当前状态是否在敌方地盘
+            wasPacman = prevObservation.getAgentState(self.index).isPacman
+            isPacman = gameState.getAgentState(self.index).isPacman
 
+            # 当代理从己方地区进入敌方地盘时，记录上一个状态的位置
+            if not wasPacman and isPacman:
+                self.changeTopacman.append(prevPos)
+    
+    
+    def getSuccessor(self, gameState, action):
+        """
+        Finds the next successor which is a grid position (location tuple).
+        """
+        successor = gameState.generateSuccessor(self.index, action)
+        pos = successor.getAgentState(self.index).getPosition()
+        if pos != nearestPoint(pos):
+            # Only half a grid position was covered
+            return successor.generateSuccessor(self.index, action)
+        else:
+            return successor
 
 
 
@@ -227,11 +266,12 @@ class DefensiveAgent(ApproximateAdversarialAgent):
     def evaluateState(self, gameState):
         #myPosition = self.getAgentPosition(self.index, gameState)
         if self.agentIsPacman(self.index, gameState):
-                return DefensiveAgent.TERMINAL_STATE_VALUE
+                # 变成pacman时，返回负无穷,防止进入敌方阵营
+                return DefensiveAgent.TERMINAL_STATE_VALUE  
 
         score = 0
         pacmanState = [self.agentIsPacman(opponent, gameState) for opponent in self.getOpponents(gameState)]
-        opponentDistances = self.getOpponentDistances(gameState)
+        opponentDistances = self.getOpponentDistances(gameState)    # 获取所有对手的距离
 
         for isPacman, (id, distance) in zip(pacmanState, opponentDistances):
             if isPacman:
@@ -277,6 +317,8 @@ class DefensiveAgent(ApproximateAdversarialAgent):
 
 
 class OpportunisticAttackAgent(ApproximateAdversarialAgent):
+    dotsEaten = 0.0
+
     def evaluateState(self, gameState):
         myPosition = self.getAgentPosition(self.index, gameState)
         food = self.getFood(gameState).asList()
@@ -296,8 +338,8 @@ class OpportunisticAttackAgent(ApproximateAdversarialAgent):
             d = min([self.distancer.getDistance(self.getAgentPosition(o, gameState), f)
                     for o in self.getOpponents(gameState)])
             if d > maxDist:
-                targetFood = f
-                maxDist = d
+                    targetFood = f
+                    maxDist = d
         if targetFood:
             foodDist = self.distancer.getDistance(myPosition, targetFood)
         else:
@@ -306,10 +348,14 @@ class OpportunisticAttackAgent(ApproximateAdversarialAgent):
         distanceFromStart = abs(myPosition[0] - gameState.getInitialAgentPosition(self.index)[0])
         if not len(food):
             distanceFromStart *= -1
-        return 2 * self.getScore(gameState)- 100 * len(food) - 2 * foodDist+ opponentDistance + distanceFromStart
 
-
-
+        return 5 * self.getScore(gameState) \
+            - 100 * len(food) \
+            - 2 * foodDist \
+            + opponentDistance \
+            + distanceFromStart
+            
+   
 
 class CautiousAttackAgent(ApproximateAdversarialAgent):
   """
@@ -398,61 +444,61 @@ class CautiousAttackAgent(ApproximateAdversarialAgent):
 #         weights = self.getWeights(gameState, action)
 #         return features * weights
 
-#     def recordChangeToPacman(self, gameState):
-#         """
-#         当上一个状态是在己方地区，而下一个状态是敌方地盘，记录上一个状态所在位置到列表self.changetopacman。
-#         """
-#         # 获取上一个状态
-#         prevObservation = self.getPreviousObservation()
-#         if prevObservation:
-#             # 获取上一个状态时代理的位置
-#             prevPos = prevObservation.getAgentState(self.index).getPosition()
-#             # 检查代理在上一个状态和当前状态是否在敌方地盘
-#             wasPacman = prevObservation.getAgentState(self.index).isPacman
-#             isPacman = gameState.getAgentState(self.index).isPacman
+    # def recordChangeToPacman(self, gameState):
+    #     """
+    #     当上一个状态是在己方地区，而下一个状态是敌方地盘，记录上一个状态所在位置到列表self.changetopacman。
+    #     """
+    #     # 获取上一个状态
+    #     prevObservation = self.getPreviousObservation()
+    #     if prevObservation:
+    #         # 获取上一个状态时代理的位置
+    #         prevPos = prevObservation.getAgentState(self.index).getPosition()
+    #         # 检查代理在上一个状态和当前状态是否在敌方地盘
+    #         wasPacman = prevObservation.getAgentState(self.index).isPacman
+    #         isPacman = gameState.getAgentState(self.index).isPacman
 
-#             # 当代理从己方地区进入敌方地盘时，记录上一个状态的位置
-#             if not wasPacman and isPacman:
-#                 self.changeTopacman.append(prevPos)
+    #         # 当代理从己方地区进入敌方地盘时，记录上一个状态的位置
+    #         if not wasPacman and isPacman:
+    #             self.changeTopacman.append(prevPos)
     
-#     def getFoodCarried(self, gameState):
-#         """
-#         获取在敌方地盘吃到的食物数量，当agent被敌人吃掉或回到己方地盘时，计数清零。
-#         """
-#         # 获取当前代理的位置
-#         myPos = gameState.getAgentState(self.index).getPosition()
-#         # 获取上一个状态
-#         prevObservation = self.getPreviousObservation()
-#         if prevObservation:
-#             # 获取上一个状态和当前状态的食物数量
-#             prevFoodList = self.getFood(prevObservation).asList()
-#             currFoodList = self.getFood(gameState).asList()
+    # def getFoodCarried(self, gameState):
+    #     """
+    #     获取在敌方地盘吃到的食物数量，当agent被敌人吃掉或回到己方地盘时，计数清零。
+    #     """
+    #     # 获取当前代理的位置
+    #     myPos = gameState.getAgentState(self.index).getPosition()
+    #     # 获取上一个状态
+    #     prevObservation = self.getPreviousObservation()
+    #     if prevObservation:
+    #         # 获取上一个状态和当前状态的食物数量
+    #         prevFoodList = self.getFood(prevObservation).asList()
+    #         currFoodList = self.getFood(gameState).asList()
 
-#             # 如果食物数量减少，增加食物数量
-#             if len(prevFoodList) > len(currFoodList):
-#                 self.foodCarried += 1
+    #         # 如果食物数量减少，增加食物数量
+    #         if len(prevFoodList) > len(currFoodList):
+    #             self.foodCarried += 1
 
-#             # 检查代理在上一个状态和当前状态是否在敌方地盘
-#             wasPacman = prevObservation.getAgentState(self.index).isPacman
-#             isPacman = gameState.getAgentState(self.index).isPacman
+    #         # 检查代理在上一个状态和当前状态是否在敌方地盘
+    #         wasPacman = prevObservation.getAgentState(self.index).isPacman
+    #         isPacman = gameState.getAgentState(self.index).isPacman
 
-#             # 当代理被敌人吃掉或回到己方地盘时，计数清零
-#             if (wasPacman and not isPacman) or (not wasPacman and not isPacman and self.getMazeDistance(myPos, self.start) == 0):
-#                 self.foodCarried = 0
+    #         # 当代理被敌人吃掉或回到己方地盘时，计数清零
+    #         if (wasPacman and not isPacman) or (not wasPacman and not isPacman and self.getMazeDistance(myPos, self.start) == 0):
+    #             self.foodCarried = 0
 
-#         return self.foodCarried
+    #     return self.foodCarried
     
-#     def getSuccessor(self, gameState, action):
-#         """
-#         Finds the next successor which is a grid position (location tuple).
-#         """
-#         successor = gameState.generateSuccessor(self.index, action)
-#         pos = successor.getAgentState(self.index).getPosition()
-#         if pos != nearestPoint(pos):
-#             # Only half a grid position was covered
-#             return successor.generateSuccessor(self.index, action)
-#         else:
-#             return successor
+    # def getSuccessor(self, gameState, action):
+    #     """
+    #     Finds the next successor which is a grid position (location tuple).
+    #     """
+    #     successor = gameState.generateSuccessor(self.index, action)
+    #     pos = successor.getAgentState(self.index).getPosition()
+    #     if pos != nearestPoint(pos):
+    #         # Only half a grid position was covered
+    #         return successor.generateSuccessor(self.index, action)
+    #     else:
+    #         return successor
         
 # class offensiveReflexAgent(ReflexCaptureAgent):
 #     def getFeatures(self, gameState, action):
