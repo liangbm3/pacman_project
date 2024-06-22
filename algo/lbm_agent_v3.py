@@ -11,9 +11,13 @@ from util import nearestPoint
 from game import Grid
 import math
 
+#################
+# Team creation #
+#################
+
 
 def createTeam(firstIndex, secondIndex, isRed,
-               first='OffensiveReflexAgent', second='OffensiveReflexAgent'):
+               first='ReflexCaptureAgent', second='ReflexCaptureAgent'):
     """
     This function should return a list of two agents that will form the
     team, initialized using firstIndex and secondIndex as their agent
@@ -30,6 +34,26 @@ def createTeam(firstIndex, secondIndex, isRed,
     """
     return [eval(first)(firstIndex), eval(second)(secondIndex)]
 
+
+def getAggression(gameState, pos, isRed):
+    """
+    根据位置和游戏状态计算攻击等级。
+
+    Parameters:
+    - gameState: 当前游戏状态。
+    - pos: 代理的位置。
+    - isRed: 一个标志，指示agent是否在红队。
+
+    Returns:
+    - float: agent的攻击等级。
+
+    """
+    walls = gameState.getWalls()
+    x, y = pos
+    if isRed:
+        return 1.0 * x / walls.width
+    else:
+        return 1.0 * (walls.width - x) / walls.width
 
 def getDeepFood(gameState, agent, isRed):
     """
@@ -57,27 +81,75 @@ def getDeepFood(gameState, agent, isRed):
                 shallowFood[c][r] = False
     return shallowFood
 
-
-def getAggression(gameState, pos, isRed):
+def getShallowFood(gameState, agent, isRed):
     """
-    根据位置和游戏状态计算攻击等级。越靠近敌方越有侵略性。
+    返回食物网格的浅表副本，其中根据 isRed 标志，只有网格的一部分可见。
 
+    Args:
+        gameState (object): 当前游戏状态。
+        agent (object): 我们自定义的agent类。
+        isRed (bool): 代表团队是否为红队。
+
+    Returns:
+        list: 代表食物网格的浅表副本。
+    """
+    food = agent.getFood(gameState)
+    deepFood = food.copy()
+    if isRed:
+        deepDistThresholdCol = int(0.8 * food.width)
+        for c in range(deepDistThresholdCol, food.width):
+            for r in range(food.height):
+                deepFood[c][r] = False
+    else:
+        deepDistThresholdCol = int(0.2 * food.width)
+        for c in range(deepDistThresholdCol):
+            for r in range(food.height):
+                deepFood[c][r] = False
+    return deepFood
+
+def getMinDistToCapsule(gameState, agent, pos, capsules):
+    """
+    计算从给定位置到最近的胶囊的最小距离。
+
+    Args:
+      gameState (object): 当前游戏状态。
+      agent (object): 我们定义的agent对象。
+      pos (tuple): 代表位置的元组。
+      capsules (list): 代表胶囊位置的元组列表。
+
+    Returns:
+      int: 从给定位置到最近的胶囊的最小距离。
+    """
+    # 如果没有胶囊，则返回0
+    if len(capsules) == 0:
+        return 0
+    minDist = 1000
+    for capsule in capsules:
+        dist = agent.getMazeDistance(pos, capsule)
+        if dist < minDist:
+            minDist = dist
+    return minDist
+
+def getCloseSafePoints(gameState, isRed):
+    """
+    返回靠近游戏板中心列的安全点列表。
     Parameters:
     - gameState: 当前游戏状态。
-    - pos: 代理的位置。
     - isRed: 一个标志，指示agent是否在红队。
 
     Returns:
-    - float: agent的攻击等级。
-
+    - safePoints: 
     """
     walls = gameState.getWalls()
-    x, y = pos
     if isRed:
-        return 1.0 * x / walls.width
+        col = int((walls.width / 2)) - 1
     else:
-        return 1.0 * (walls.width - x) / walls.width
-
+        col = int((walls.width / 2))
+    safePoints = []
+    for y in range(walls.height):
+        if not walls[col][y]:
+            safePoints.append((col, y))
+    return safePoints
 
 def getPositionAfterAction(pos, action):
     """
@@ -101,7 +173,6 @@ def getPositionAfterAction(pos, action):
         return (x, y - 1)
     else:
         return pos
-
 
 def getPossibleActions(gameState, pos):
     """
@@ -129,7 +200,6 @@ def getPossibleActions(gameState, pos):
     actions.append('Stop')
     return actions
 
-
 def getDeadEnds(gameState):
     """
       接收游戏状态，并在游戏状态中找出死胡同。
@@ -146,131 +216,9 @@ def getDeadEnds(gameState):
         for c in range(walls.width):
             pos = (c, r)
             if not walls[c][r]:
-                if len(getPossibleActions(gameState, pos)) <= 2:  # 只能停止或往一个方向走
+                if len(getPossibleActions(gameState, pos)) <= 2:  # Stop and one other action
                     deadEnds.append(pos)
     return deadEnds
-
-
-def bfsDepthGrid(gameState, chokePoint, direction, depthGrid):
-    """
-    执行广度优先搜索，以计算给定阻塞点的深度网格。
-
-    Args:
-        gameState (object): 当前游戏状态
-        chokePoint (tuple): 开始搜索的阻塞点。
-        direction (str): 从阻塞点移动的方向。
-        depthGrid (list): 代表游戏中每个单元深度的网格。
-
-    Returns:
-        list: 代表游戏中每个单元深度的网格。
-    """
-    x, y = chokePoint
-    depthGrid[x][y] = 9
-    newPos = getPositionAfterAction(chokePoint, direction)
-    posQueue = util.Queue()
-    posQueue.push((newPos, 1))
-    while not posQueue.isEmpty():
-        pos, depth = posQueue.pop()
-        x, y = pos
-        if depthGrid[x][y] == 0:
-            depthGrid[x][y] = depth
-            actions = getPossibleActions(gameState, pos)
-        for action in actions:
-            nextPos = getPositionAfterAction(pos, action)
-            newDepth = depth + 1
-            posQueue.push((nextPos, newDepth))
-    x, y = chokePoint
-    depthGrid[x][y] = 0
-    return depthGrid
-
-
-def getDistToSafety(gameState, agent):
-    """
-      计算到最近安全点的距离。
-    Args:
-      gameState: 当前游戏状态。
-      agent: 我们定义的agent对象。
-
-    Returns:
-      int: 到最近安全点的距离。
-    """
-    agentIndex = agent.index
-    isPacman = gameState.getAgentState(agentIndex).isPacman
-    # if not isPacman:
-    #  return 0
-    isRed = agent.red
-    pos = gameState.getAgentPosition(agentIndex)
-    closestSafePoints = getCloseSafePoints(gameState, isRed)
-    closestDist = 1000
-    for point in closestSafePoints:
-        dist = agent.getMazeDistance(pos, point)
-        if dist < closestDist:
-            closestDist = dist
-    return closestDist
-
-
-def getDistAdvantage(gameState, agent, enemyPos, isDefending):
-    """
-    Calculates the distance advantage of an agent based on its position, enemy position, and whether it is defending or not.
-
-    Parameters:
-    - gameState: The current game state.
-    - agent: The agent object.
-    - enemyPos: The position of the enemy.
-    - isDefending: A boolean indicating whether the agent is defending or not.
-
-    Returns:
-    - The distance advantage of the agent. If the agent is defending, it returns the minimum advantage. If the agent is not defending, it returns the maximum advantage.
-    """
-    agentIndex = agent.index
-    isRed = agent.red
-    pos = gameState.getAgentPosition(agentIndex)
-
-    if isDefending:
-        closestSafePoints = getCloseSafePoints(gameState, not isRed)
-        minAdvantage = 1000
-    else:
-        closestSafePoints = getCloseSafePoints(gameState, isRed)
-        maxAdvantage = -1000
-    if len(closestSafePoints) == 0:
-        return 0
-    for point in closestSafePoints:
-        dist = agent.getMazeDistance(pos, point)
-        enemyDist = agent.getMazeDistance(enemyPos, point)
-        advantage = enemyDist - dist
-        if isDefending:
-            if advantage < minAdvantage:
-                minAdvantage = advantage
-        else:
-            if advantage > maxAdvantage:
-                maxAdvantage = advantage
-    if isDefending:
-        return minAdvantage
-    else:
-        return maxAdvantage
-
-
-def getDepthsAndChokePoints(gameState):
-    """
-    接收游戏状态，并在游戏状态中找出阻塞点和深度网格。
-
-    Args:
-      gameState: 当前游戏状态。
-
-    Returns:
-      depthGrid: 代表游戏中每个单元深度的网格。
-      chokePoints: 代表游戏中窒息点的列表。
-    """
-    walls = gameState.getWalls()  # 获取墙壁信息
-    depthGrid = Grid(walls.width, walls.height,
-                     initialValue=0)  # 创建一个网格，用于存储每个单元的深度
-
-    chokePoints = getChokePoints(gameState)
-    for chokePoint, directions in chokePoints:
-        for direction in directions:
-            depthGrid = bfsDepthGrid(
-                gameState, chokePoint, direction, depthGrid)
-
 
 def getChokePointAndDirection(gameState, deadEnd):
     """
@@ -316,7 +264,6 @@ def getChokePointAndDirection(gameState, deadEnd):
             break
     return chokePoint, dirAction
 
-
 def getChokePointAndDirectionRestricted(gameState, deadEnd, directionsRestricted):
     """
         根据给定的游戏状态、死胡同位置和限制方向，找到阻塞点和限制方向。
@@ -334,7 +281,6 @@ def getChokePointAndDirectionRestricted(gameState, deadEnd, directionsRestricted
     walls = gameState.getWalls()
     pos = deadEnd
     actions = getPossibleActions(gameState, pos)
-    # 移除指定的受限动作和停止动作
     for action in actions:
         if action in directionsRestricted or action == 'Stop':
             actions.remove(action)
@@ -361,7 +307,6 @@ def getChokePointAndDirectionRestricted(gameState, deadEnd, directionsRestricted
             dirAction = action
             break
     return chokePoint, dirAction
-
 
 def getChokePoints(gameState):
     """
@@ -421,79 +366,142 @@ def getChokePoints(gameState):
 
     return chokePointList
 
-
-def getShallowFood(gameState, agent, isRed):
+def getMinDistChokePoints(gameState, agent, pos, chokePoints):
     """
-    返回食物网格的浅表副本，其中根据 isRed 标志，只有网格的一部分可见。
+    计算位置到阻塞点的最小距离。
 
-    Args:
-        gameState (object): 当前游戏状态。
-        agent (object): 我们自定义的agent类。
-        isRed (bool): 代表团队是否为红队。
+    Parameters:
+    - gameState: 当前游戏状态。
+    - agent: 代理对象。
+    - pos: 位置。
+    - chokePoints: 阻塞点。
 
     Returns:
-        list: 代表食物网格的浅表副本。
+    - minDist: 最小距离。
     """
-    food = agent.getFood(gameState)
-    deepFood = food.copy()
-    if isRed:
-        deepDistThresholdCol = int(0.8 * food.width)
-        for c in range(deepDistThresholdCol, food.width):
-            for r in range(food.height):
-                deepFood[c][r] = False
-    else:
-        deepDistThresholdCol = int(0.2 * food.width)
-        for c in range(deepDistThresholdCol):
-            for r in range(food.height):
-                deepFood[c][r] = False
-    return deepFood
-
-
-def getMinDistToCapsule(gameState, agent, pos, capsules):
-    """
-    计算从给定位置到最近的胶囊的最小距离。
-
-    Args:
-      gameState (object): 当前游戏状态。
-      agent (object): 我们定义的agent对象。
-      pos (tuple): 代表位置的元组。
-      capsules (list): 代表胶囊位置的元组列表。
-
-    Returns:
-      int: 从给定位置到最近的胶囊的最小距离。
-    """
-    # 如果没有胶囊，则返回0
-    if len(capsules) == 0:
-        return 0
     minDist = 1000
-    for capsule in capsules:
-        dist = agent.getMazeDistance(pos, capsule)
+    walls = gameState.getWalls()
+    for choke, dirs in chokePoints:
+        dist = agent.getMazeDistance(pos, choke)
         if dist < minDist:
             minDist = dist
     return minDist
 
-
-def getCloseSafePoints(gameState, isRed):
+def bfsDepthGrid(gameState, chokePoint, direction, depthGrid):
     """
-    返回靠近游戏板中心列的安全点列表。
-    Parameters:
-    - gameState: 当前游戏状态。
-    - isRed: 一个标志，指示agent是否在红队。
+    执行广度优先搜索，以计算给定阻塞点的深度网格。
+
+    Args:
+        gameState (object): 当前游戏状态
+        chokePoint (tuple): 开始搜索的阻塞点。
+        direction (str): 从阻塞点移动的方向。
+        depthGrid (list): 代表游戏中每个单元深度的网格。
 
     Returns:
-    - safePoints: 
+        list: 代表游戏中每个单元深度的网格。
     """
-    walls = gameState.getWalls()
-    if isRed:
-        col = int((walls.width / 2)) - 1
-    else:
-        col = int((walls.width / 2))
-    safePoints = []
-    for y in range(walls.height):
-        if not walls[col][y]:
-            safePoints.append((col, y))
-    return safePoints
+    x, y = chokePoint
+    depthGrid[x][y] = 9
+    newPos = getPositionAfterAction(chokePoint, direction)
+    posQueue = util.Queue()
+    posQueue.push((newPos, 1))
+    while not posQueue.isEmpty():
+        pos, depth = posQueue.pop()
+        x, y = pos
+        if depthGrid[x][y] == 0:
+            depthGrid[x][y] = depth
+            actions = getPossibleActions(gameState, pos)
+            for action in actions:
+                nextPos = getPositionAfterAction(pos, action)
+                newDepth = depth + 1
+                posQueue.push((nextPos, newDepth))
+    x, y = chokePoint
+    depthGrid[x][y] = 0
+    return depthGrid
 
+def getDepthsAndChokePoints(gameState):
+    """
+    接收游戏状态，并在游戏状态中找出阻塞点和深度网格。
+
+    Args:
+      gameState: 当前游戏状态。
+
+    Returns:
+      depthGrid: 代表游戏中每个单元深度的网格。
+      chokePoints: 代表游戏中窒息点的列表。
+    """
+    walls = gameState.getWalls() # 获取墙壁信息
+    depthGrid = Grid(walls.width, walls.height, initialValue=0)# 创建一个网格，用于存储每个单元的深度
+
+    chokePoints = getChokePoints(gameState)
+    for chokePoint, directions in chokePoints:
+        for direction in directions:
+            depthGrid = bfsDepthGrid(
+                gameState, chokePoint, direction, depthGrid)
+
+    return depthGrid, chokePoints
+
+def getDistToSafety(gameState, agent):
+    """
+      计算到最近安全点的距离。
+    Args:
+      gameState: 当前游戏状态。
+      agent: 我们定义的agent对象。
+
+    Returns:
+      int: 到最近安全点的距离。
+    """
+    agentIndex = agent.index
+    isPacman = gameState.getAgentState(agentIndex).isPacman
+    # if not isPacman:
+    #  return 0
+    isRed = agent.red
+    pos = gameState.getAgentPosition(agentIndex)
+    closestSafePoints = getCloseSafePoints(gameState, isRed)
+    closestDist = 1000
+    for point in closestSafePoints:
+        dist = agent.getMazeDistance(pos, point)
+        if dist < closestDist:
+            closestDist = dist
+    return closestDist
+
+def getDistAdvantage(gameState, agent, enemyPos, isDefending):
+    """
+    计算agent的距离优势。
+    Parameters:
+    - gameState: 当前游戏状态。
+    - agent:    我们定义的agent对象。
+    - enemyPos: 敌人的位置。
+    - isDefending: 一个标志，指示agent是否在防守。
+    Returns:
+    - int: 距离优势。
+    """
+    agentIndex = agent.index
+    isRed = agent.red
+    pos = gameState.getAgentPosition(agentIndex)
+
+    if isDefending:
+        closestSafePoints = getCloseSafePoints(gameState, not isRed)
+        minAdvantage = 1000
+    else:
+        closestSafePoints = getCloseSafePoints(gameState, isRed)
+        maxAdvantage = -1000
+    if len(closestSafePoints) == 0:
+        return 0
+    for point in closestSafePoints:
+        dist = agent.getMazeDistance(pos, point)
+        enemyDist = agent.getMazeDistance(enemyPos, point)
+        advantage = enemyDist - dist
+        if isDefending:
+            if advantage < minAdvantage:
+                minAdvantage = advantage
+        else:
+            if advantage > maxAdvantage:
+                maxAdvantage = advantage
+    if isDefending:
+        return minAdvantage
+    else:
+        return maxAdvantage
 
 def getDistAdvantageCapsule(gameState, agent, enemyPos, isDefending):
     """
@@ -541,38 +549,38 @@ def getDistAdvantageCapsule(gameState, agent, enemyPos, isDefending):
     else:
         return maxAdvantage
 
-
 enemyLocationPredictor = None
 PERSIST = 10
 
-
 class EnemyLocationPredictor:
-    """
-    预测吃豆人游戏中敌人位置的类。
 
-    Attributes:
-    - depthGrid: 代表游戏中每个单元深度的网格。
-    - enemyIndices: 代表敌人代理的索引的列表。
-    - teamIndices: 代表团队代理的索引的列表。
-    - walls: 代表游戏中墙壁的网格。
-    - pastFood: 代表团队正在保卫的食物的网格。
-    - pastCapsules: 代表团队正在保卫的胶囊的网格。
-    - possiblePositions1: 代表敌人1的可能位置的网格。
-    - possiblePositions2: 代表敌人2的可能位置的网格。
-    - positionsToInvestigate: 一个位置列表，用于敌人位置的调查。
-    - positionsToAvoid: 一个位置列表，用于避免敌人位置。
-    - enemies: 代表敌人的索引的列表。
-    - isRed: 代表团队是否为红队。
-    - pastTeamLocation1: 团队成员1的上一个位置。
-    - pastTeamLocation2: 团队成员2的上一个位置。
-    - enemyStartPos: 敌人的初始位置。
-    - enemy1KnownLocation: 敌人1的已知位置。
-    - enemy2KnownLocation: 敌人2的已知位置。
-    - ignoreCounterInvestigate: 一个计数器，用于忽略调查位置。
-    - ignoreCounterAvoid: 一个计数器，用于忽略避免位置。
-    """
 
     def __init__(self, gameState, agent):
+        """
+        预测吃豆人游戏中敌人位置的类。
+
+        Attributes:
+        - depthGrid: 代表游戏中每个单元深度的网格。
+        - enemyIndices: 代表敌人代理的索引的列表。
+        - teamIndices: 代表团队代理的索引的列表。
+        - walls: 代表游戏中墙壁的网格。
+        - pastFood: 代表团队正在保卫的食物的网格。
+        - pastCapsules: 代表团队正在保卫的胶囊的网格。
+        - possiblePositions1: 代表敌人1的可能位置的网格。
+        - possiblePositions2: 代表敌人2的可能位置的网格。
+        - positionsToInvestigate: 一个位置列表，用于敌人位置的调查。
+        - positionsToAvoid: 一个位置列表，用于避免敌人位置。
+        - enemies: 代表敌人的索引的列表。
+        - isRed: 代表团队是否为红队。
+        - pastTeamLocation1: 团队成员1的上一个位置。
+        - pastTeamLocation2: 团队成员2的上一个位置。
+        - enemyStartPos: 敌人的初始位置。
+        - enemy1KnownLocation: 敌人1的已知位置。
+        - enemy2KnownLocation: 敌人2的已知位置。
+        - ignoreCounterInvestigate: 一个计数器，用于忽略调查位置。
+        - ignoreCounterAvoid: 一个计数器，用于忽略避免位置。
+        """
+
         self.depthGrid = agent.depthGrid
         self.enemyIndices = agent.getOpponents(gameState)
         self.teamIndices = agent.getTeam(gameState)
@@ -988,6 +996,29 @@ class EnemyLocationPredictor:
 
         return possiblePositions1, possiblePositions2
 
+    def update(self, gameState, agent, teamPosition1, teamPosition2, verbose=False):
+        self.possiblePositions1, self.possiblePositions2 = self.updatePart(
+            gameState, agent, teamPosition1, teamPosition2, verbose)
+
+    def getPositionPossibleGrid(self):
+        g = Grid(self.walls.width, self.walls.height)
+        for r in range(self.walls.height):
+            for c in range(self.walls.width):
+                g[c][r] = self.possiblePositions1[c][r] or self.possiblePositions2[c][r]
+        return g
+
+    def getPositionsToInvestigate(self):
+        return self.positionsToInvestigate
+
+    def getPositionsToAvoid(self):
+        return self.positionsToAvoid
+
+    def removePositionFromInvestigation(self, pos):
+        self.positionsToInvestigate.remove(pos)
+
+    def removePositionFromAvoidance(self, pos):
+        self.positionsToAvoid.remove(pos)
+
 
 ENOUGH_DOTS = 4
 
@@ -1013,10 +1044,10 @@ class ReflexCaptureAgent(CaptureAgent):
         Initializes the agent's state at the start of the game.
 
         Args:
-            gameState: The current game state.
+          gameState: The current game state.
 
         Returns:
-            None
+          None
         """
         global enemyLocationPredictor
         global mode1
@@ -1026,7 +1057,7 @@ class ReflexCaptureAgent(CaptureAgent):
         self.start = gameState.getAgentPosition(self.index)
         self.pastLocation = self.start
         self.depthGrid, self.chokePoints = getDepthsAndChokePoints(gameState)
-
+        
         # 第一个agent会被设置为领导者，第二个agent会被设置为追随者
         if enemyLocationPredictor == None:
             self.isLead = True
@@ -1035,7 +1066,7 @@ class ReflexCaptureAgent(CaptureAgent):
         else:
             self.targetId = 2
             self.isLead = False
-        self.justSpawned = True
+
         self.prevFood = self.getFood(gameState)  # 要吃的食物
         self.prevFoodDef = self.getFoodYouAreDefending(gameState)  # 要保护的食物
         self.prevScore = self.getScore(gameState)  # 赢其他队伍的分数
@@ -1050,7 +1081,7 @@ class ReflexCaptureAgent(CaptureAgent):
                     self.openSpaces += 1
 
         # Starting Mode
-        # 如果是领导者，mode1为Travel to Center，如果是追随者，mode2为Travel to Center
+         # 如果是领导者，mode1为Travel to Center，如果是追随者，mode2为Travel to Center
         self.mode = 'Travel to Center'
         if self.targetId == 1:
             mode1 = self.mode
@@ -1075,6 +1106,7 @@ class ReflexCaptureAgent(CaptureAgent):
 
         self.target = None
 
+    # Switches between Charge Capsule and Shallow Offense
     def getNextMode(self, gameState, verbose=False):
         """
         根据当前游戏状态确定代理的下一个模式。
@@ -1315,7 +1347,7 @@ class ReflexCaptureAgent(CaptureAgent):
 
         else:  # Default
             return "Shallow Offense"
-
+        
     def chooseAction(self, gameState):
         global mode1
         global mode2
@@ -1594,6 +1626,7 @@ class ReflexCaptureAgent(CaptureAgent):
 
         # Priorities
         priorities = self.getPriorities(self.mode)
+        random1 = random.random()
         for action in actions:
             values[action] = self.getFeatures(gameState, self.mode, action)
 
@@ -1625,59 +1658,6 @@ class ReflexCaptureAgent(CaptureAgent):
             return successor.generateSuccessor(self.index, action)
         else:
             return successor
-
-    def getFeatures(self, gameState, mode, action):
-        pass
-
-    def getPriorities(self, mode):
-        pass
-
-    def claimTarget(self, target, investigate, targetId, pos, otherPos, override=False):
-        global target1
-        global target2
-        global ignoreCounter1
-        global ignoreCounter2
-        if target == None:
-            return False
-        if targetId == 1:
-            if not target1 is None:
-                return True
-        if target2 == 2:
-            if not target2 is None:
-                return True
-
-        if targetId == 1:
-            if self.getMazeDistance(target, pos) < self.getMazeDistance(target, otherPos) or override:
-                if investigate:
-                    enemyLocationPredictor.removePositionFromInvestigation(
-                        target)
-                target1 = target
-                ignoreCounter1 = 12
-                return True
-        else:
-            if self.getMazeDistance(target, pos) < self.getMazeDistance(target, otherPos) or override:
-                if investigate:
-                    enemyLocationPredictor.removePositionFromInvestigation(
-                        target)
-                target2 = target
-                ignoreCounter2 = 12
-                return True
-        return False
-
-    def removeTarget(self, targetId):
-        global target1
-        global target2
-        global ignoreCounter1
-        global ignoreCounter2
-        if targetId == 1:
-            target1 = None
-            ignoreCounter1 = -1
-        else:
-            target2 = None
-            ignoreCounter2 = -1
-
-
-class OffensiveReflexAgent(ReflexCaptureAgent):
 
     def getRisk(self, gameState, newPos):
         g = enemyLocationPredictor.getPositionPossibleGrid()
@@ -1853,3 +1833,48 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
             return ['captured', 'stop', 'onDefense', 'targetDist', 'sentryScore', 'teamDist', 'distToInvader', 'enemyPredictDefense']
         else:
             return []
+
+    def claimTarget(self, target, investigate, targetId, pos, otherPos, override=False):
+        global target1
+        global target2
+        global ignoreCounter1
+        global ignoreCounter2
+        if target == None:
+            return False
+        if targetId == 1:
+            if not target1 is None:
+                return True
+        if target2 == 2:
+            if not target2 is None:
+                return True
+
+        if targetId == 1:
+            if self.getMazeDistance(target, pos) < self.getMazeDistance(target, otherPos) or override:
+                if investigate:
+                    enemyLocationPredictor.removePositionFromInvestigation(
+                        target)
+                target1 = target
+                ignoreCounter1 = 12
+                return True
+        else:
+            if self.getMazeDistance(target, pos) < self.getMazeDistance(target, otherPos) or override:
+                if investigate:
+                    enemyLocationPredictor.removePositionFromInvestigation(
+                        target)
+                target2 = target
+                ignoreCounter2 = 12
+                return True
+        return False
+
+    def removeTarget(self, targetId):
+        global target1
+        global target2
+        global random1
+        if targetId == 1:
+            target1 = None
+            ignoreCounter1 = -1
+        else:
+            target2 = None
+            ignoreCounter2 = -1
+
+
