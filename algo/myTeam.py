@@ -53,13 +53,16 @@ def createTeam(firstIndex, secondIndex, isRed,
 
 # tunnels will store all tunnel positions of the map, the tunnel means
 # only one way to leave
+#tunnels（隧道）储存地图中所有隧道坐标，所谓隧道坐标即只有一种离开方式，至少有两种移动方式不能选择
 tunnels = []
 
 # tunnels will store all tunnel positions of the map, but regarding the
 # boundary as wall to find tunnels.
+#defensiveTunnels(防守隧道)储存本方地图上的隧道坐标
 defensiveTunnels = []
 
 # store the walls of the map
+#walls储存所有墙所在的坐标
 walls = []
 
 """
@@ -69,6 +72,15 @@ getAllTunnels will return the all tunnels as a list, it uses a while loop
 
 
 def getAllTunnels(legalPositions):
+    """
+    getAllTunnels will return the all tunnels as a list, it uses a while loop 
+    to find a tunnel level by level, stop until no more tunnels in the map
+    getAllTunnels返回列表，储存所有通道坐标
+    实现方法：
+    使用while循环分层遍历
+    调用getMoreTunnels实现下一层搜索
+    直到搜索完所有隧道点
+    """
     tunnels = []
     while len(tunnels) != len(getMoreTunnels(legalPositions, tunnels)):
         tunnels = getMoreTunnels(legalPositions, tunnels)
@@ -81,6 +93,16 @@ getMoreTunnels is the function to find the next level's tunnel
 
 
 def getMoreTunnels(legalPositions, tunnels):
+    """
+    getMoreTunnels is the function to find the next level's tunnel
+    getMoreTunnels返回列表，实现隧道坐标的分层搜索
+    实现方法：
+    遍历所有LegalPositions(合法坐标，agnet能存在的位置)
+    通过getSuccsorNum分别查找遍历坐标在tunnels中的可移动路线数量neighborTunnelsNum
+    和在legalPositions中的可移动路线数量succsorsNum
+    若succsorsNum - neighborTunnelsNum == 1且遍历的坐标不在tunnels中
+    则加入tunnels
+    """
     newTunnels = tunnels
     for i in legalPositions:
         neighborTunnelsNum = getSuccsorsNum(i, tunnels)
@@ -96,6 +118,13 @@ getMoreTunnels is the function to find the next level's tunnel
 
 
 def getSuccsorsNum(pos, legalPositions):
+    """
+    getMoreTunnels is the function to find the next level's tunnel
+    getMoreTunnels返回一个数，表示在传入的legalPositions中的可移动路线数量
+    实现方法：
+    分别判断上下左右的临近坐标是否在legalPositions中
+    若在，则num+1
+    """
     num = 0
     x, y = pos
     if (x + 1, y) in legalPositions:
@@ -115,6 +144,13 @@ getSuccsorsPos will return all position's legal neighbor positions
 
 
 def getSuccsorsPos(pos, legalPositions):
+    """
+    getSuccsorsPos will return all position's legal neighbor positions
+    getSuccsorsPos返回一个列表，储存在传入的legalPositions中的临近坐标
+    实现方法：
+    分别判断上下左右的临近坐标是否在legalPositions中
+    若在，则加入列表   
+    """
     succsorsPos = []
     x, y = pos
     if (x + 1, y) in legalPositions:
@@ -134,6 +170,12 @@ given current position and an action, nextPos will return the next position
 
 
 def nextPos(pos, action):
+    """
+    given current position and an action, nextPos will return the next position
+    nextPos返回一个坐标，表示在action操作下pos的变化
+    实现方法：
+    判断action类型，根据类型做出相应改动
+    """
     x, y = pos
     if action == Directions.NORTH:
         return (x, y + 1)
@@ -153,6 +195,11 @@ these two points
 
 
 def manhattanDist(pos1, pos2):
+    """
+    manhattanDist: input two points, return the mahattan distance between 
+    these two points
+    manhattanDist返回一个数，表示输入的pos1和pos2之间的曼哈顿距离
+    """
     x1, y1 = pos1
     x2, y2 = pos2
     return abs(x2 - x1) + abs(y2 - y1)
@@ -165,6 +212,15 @@ the entry position of this tunnel
 
 
 def getTunnelEntry(pos, tunnels, legalPositions):
+    """
+    getTunnelEntry: given a position, if position in tunnels, it will return
+    the entry position of this tunnel
+    getTunnelEntry返回一个坐标，表示pos所在隧道的入口坐标
+    实现方法：
+    先判断pos是否在tunnels中，若不在，返回None
+    若在，通过getATunnels获得pos所在的当前隧道的所有坐标aTunnel
+    遍历aTunnel，通过getPossibleEntry判断是否是入口
+    """
     if pos not in tunnels:
         return None
     aTunnel = getATunnel(pos, tunnels)
@@ -181,6 +237,16 @@ find if next neighbor position is tunnel entry
 
 
 def getPossibleEntry(pos, tunnels, legalPositions):
+    """
+    getPossibleEntry: this assisted funtion used in getTunnelEntry to
+    find if next neighbor position is tunnel entry
+    getPossibleEntry返回一个坐标，表示一条隧道的入口
+    实现方法：
+    判断当前pos的临近坐标是否满足：
+    （1）在legalPositions中
+    （2）不在tunnels中
+    若满足，则返回这个临近坐标
+    """
     x, y = pos
     if (x + 1, y) in legalPositions and (x + 1, y) not in tunnels:
         return (x + 1, y)
@@ -200,6 +266,20 @@ that this position belongs to
 
 
 def getATunnel(pos, tunnels):
+    """
+    getATunnel: input a position and tunnels, this function will return a tunnel
+    that this position belongs to
+    getATunnel返回一个列表，存储当前pos所在隧道的所有坐标
+    实现方法：
+    先判断pos在不在tunnels中,
+    若在，构建一个FIFO的队列bfs_queue和一个空列表closed
+    将当前pos加入bfs_queue
+    若bfs_queue非空，则
+        取出一个坐标currPos，若currPos不在closed中
+        加入closed，并寻找currPos的临近坐标
+        遍历临近坐标，若临近坐标不在closed中，
+        加入bfs_queue
+    """
     if pos not in tunnels:
         return None
     bfs_queue = util.Queue()
