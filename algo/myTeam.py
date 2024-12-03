@@ -83,13 +83,8 @@ getAllTunnels 将以列表形式返回所有隧道，
 """
 def getAllTunnels(legalPositions):
     """
-    getAllTunnels will return the all tunnels as a list, it uses a while loop 
-    to find a tunnel level by level, stop until no more tunnels in the map
-    getAllTunnels返回列表，储存所有通道坐标
-    实现方法：
-    使用while循环分层遍历
-    调用getMoreTunnels实现下一层搜索
-    直到搜索完所有隧道点
+    getAllTunnels 将以列表形式返回所有隧道，
+    它使用 while 循环逐级查找隧道，直到地图中没有更多隧道为止
     """
     tunnels = []
     while len(tunnels) != len(getMoreTunnels(legalPositions, tunnels)):
@@ -215,9 +210,7 @@ getTunnelEntry：给定一个位置，如果位置在隧道中，它将返回此
 
 def getTunnelEntry(pos, tunnels, legalPositions):
     """
-    getTunnelEntry: given a position, if position in tunnels, it will return
-    the entry position of this tunnel
-    getTunnelEntry返回一个坐标，表示pos所在隧道的入口坐标
+    返回一个坐标，表示pos所在隧道的入口坐标
     实现方法：
     先判断pos是否在tunnels中，若不在，返回None
     若在，通过getATunnels获得pos所在的当前隧道的所有坐标aTunnel
